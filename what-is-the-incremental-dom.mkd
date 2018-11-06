@@ -1,0 +1,102 @@
+# incremental-domとは何なのか
+
+どうやら，Angularの新しいレンダリングエンジンであるIvyには，incremental-dom という技術が採用されているらしい．incremental-domとは一体どういった技術なのだろうか．
+
+incremental-domとは，Googleが発表したWebアプリケーションにおけるレンダリングのための技術である．
+
+[incremental-dom | An in-place DOM diffing library](http://google.github.io/incremental-dom/)
+
+
+
+## 仮想DOMにおけるレンダリング
+
+incremental-domと似たような技術に，仮想DOMというのがある．仮想DOMは，以下のような手順でレンダリングを行う．
+
+1. DOMの木構造を模したプレーンなJavaScriptオブジェクト(仮想DOM)をUIの状態として持っておく
+2. DOMを更新する必要が生じた時，仮想DOMを生成する関数を呼び出し，新しい仮想DOMを得る
+3. 新しいものと古いものを比較し，**DOM APIを直接使用することなく**，どの部分を更新すれば良いかを判断する
+4. 比較した結果に応じて，DOMを更新する．
+
+これが仮想DOMにおけるレンダリングの仕組みである．
+仮想DOMを使用することで，DOM APIを直接使用せずに変更箇所を特定することができるため，DOM APIを使用する箇所は少なく済み，より良いレンダリングのパフォーマンスが得られる．
+加えて，アプリケーションの開発者がどのように差分を検出し，DOMを更新するのかについて考える必要がなくなる．
+
+
+
+## incremental-domにおけるレンダリング
+
+では，incremental-domどのようにレンダリングが行われるのか．以下にincremental-domにおけるレンダリングの流れを示す．
+
+1. 仮想DOMと同様，DOMの木構造を模したPOJOを持っておく(仮にこれを「状態オブジェクト」とする)
+2. DOMを更新する必要が生じた時，レンダリング関数を呼び出す
+3. レンダリング関数は，incremental node functionと呼ばれる関数を呼び出す
+4. incremental node functionは，状態オブジェクトを参照し，更新の必要がある部分を判断し，DOM APIでそれを適用する
+
+これが incremental-domにおけるレンダリングの仕組みである．
+
+仮想DOMとは，以下の点において異なる．
+* 比較のために新しい状態オブジェクトが生成されない
+* レンダリング関数内で呼び出されたincremental node functionがインクリメンタルにDOMの更新を行う
+
+例えば，仮想DOMを使用するとき，以下のような仮想DOMを返す関数があったとする．
+
+```javascript
+function render(state) {
+  return (
+    <div>Helo {state.name}</div>
+  );
+}
+```
+
+仮想DOMでは，UIを更新する必要が生じると，
+この関数が都度呼び出され，古い仮想DOMとの比較によって差分検出が行われ，DOMに更新が適用される．
+
+incremental-domにおいては，同様のUIをレンダリングする関数は以下のようになるだろう．
+
+```javascript
+function render(state) {
+  elementOpen('div');
+    text(`Hello ${state.name}`);
+  elementClose('div');
+}
+```
+
+ここで，レンダリング関数が何か値を返すのではなく，単に関数を呼び出していることに着目してほしい．
+この，`elementOpen`，`text`，`elementClose`が，incremental node functionである．
+最初にレンダリングを行う際，以下のような状態オブジェクトが生成されたとする．
+
+```json
+{
+  "name": "div",
+  "children": ["Hello world"]
+}
+```
+
+ここで，状態が変更され， `state.name`が`musou1500`に変更されたとする．
+そうすると，以下のようにDOMの更新が行われる．
+
+1. レンダリング関数が呼び出される
+2. `elementOpen` が呼び出される
+  1. 状態オブジェクトを参照．引数で渡された `div` と比較．更新の必要なしと判断
+3. `text` がよびだされる
+  1. 状態オブジェクトを参照．引数で渡された `Hello musou1500` と比較．更新の必要ありと判断
+  2. DOM APIを呼び出し，`div` タグ内のテキストを書き換え
+
+このようになる．
+
+
+
+## incremental-domの利点
+
+
+incremental-domを使用することの利点として
+
+* 比較のために新しい状態オブジェクトが生成されないため，レンダリング時のメモリ割り当てを減らすことができ，パフォーマンスが予測可能となる
+* テンプレートベースのアプローチに容易にマップする
+
+ということが挙げられる．
+
+なお，仮想DOMに比べて書きづらそうに見えるが，incremental-domは直接使用されるというよりは，
+フレームワークなどから利用されることを意図している．
+Angularが独自のテンプレート構文を持っていることを考えると，Ivyはそのケースだと言えそうだ．
+
