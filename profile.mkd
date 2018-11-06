@@ -1,0 +1,90 @@
+# プロフィール
+
+## 最近やってること
+* Angular，hyperappでのSPA開発
+* ionic frameworkでのハイブリッドアプリ開発
+* Node.jsでのバックエンド開発(アプリのバックエンドAPI開発をやることが多いです)
+* Google Cloud Platformでのアプリケーション構築（勉強中）
+
+数年前までは，PHPでのバックエンド開発をメインにやっていました．
+最近はフロントエンド開発の方がメインで，個人的な興味もフロントエンド寄りです．
+
+## GitHub
+公開できそうなものをいくつか．
+
+* [musou1500/compilerbook-9cc](https://github.com/musou1500/compilerbook-9cc)
+* [musou1500/moi-fizzbuzz](https://github.com/musou1500/moi-fizzbuzz)
+* [musou1500/twitter-autorename](https://github.com/musou1500/twitter-autorename)
+* [musou1500/toy-idom](https://github.com/musou1500/toy-idom)
+* [musou1500/bf.js (gist)](https://gist.github.com/musou1500/adbbaf57e1ebf27c8f63600de37ccecc)
+
+OSSのプロジェクトにPRを出したもの．
+* [line/line-bot-sdk-nodejs Support richmenu api #34](https://github.com/line/line-bot-sdk-nodejs/pull/34)
+  - Node.js向けのLINE Bot SDKをRich Menu APIに対応させたPR
+* [padawan-php/deoplete-padawan add auto update feature #18](https://github.com/padawan-php/deoplete-padawan/pull/18)
+  - vimでPHPのオムニ補完を実現するプラグインに，機能追加を行ったもの．オプションを指定すると，ファイルを保存した際に，自動でシグネーチャインデックスが更新されるようになった．
+  
+[この他にもいくつかあります](https://github.com/search?p=1&q=author%3Amusou1500+is%3Apr&type=Issues)
+
+## FAQ
+
+### プログラマを続けていく上でのモチベーションはなんですか，また，やりがいを感じるのはどんなときですか．
+執筆中
+
+### 今まで取り組んだ技術的な課題のうち，難しかった課題はどんなものでしたか．また，その課題をどのように解決しましたか．
+
+#### HaxeFoundation/haxe #4221 について
+Haxeという言語のコンパイラにPRを出したことがありました．
+Haxeは，EcmaScriptライクな文法を持つ言語で，JavaやC++，JavaScriptなど他の言語に変換して使うことができるのが特徴です．
+
+そのコンパイラに，Java8対応のためのPRを送ったことがありました．
+[HaxeFoundation/haxe #4221](https://github.com/HaxeFoundation/haxe/pull/4221)
+
+Java 8から，`_` (アンダースコア) 一文字のみの変数名は使用不可となりました．
+この時，Haxeのソースコードに `_` 一文字の変数が含まれていた場合，Javaソースコードでも同じ変数名をそのまま使ってしまうと，
+Java 8以降の環境の場合問題が生じます．
+これに対し，Haxe からJavaに変換する際に，変数名を適切にエスケープするようにする，という解決方法を取りました．
+
+結果的に，変更内容としてはかなり簡単なものになりましたが，全く知識のない，触れたことのない言語で書かれた，
+4000行近いソースコードの中から変更箇所を読み解く作業にかなり苦労しました．
+
+#### 運用サービスのメンテナンスについて
+2018年でサービス開始から10年近くになる，趣味で運用しているphp製のWebアプリケーションがあります．
+
+2018年6月頃まで，ubuntu serverの上で，apache + mod_php + MySQLの構成で運用していました．
+
+しかし，
+* OSやミドルウェアのバージョンアップに追随できていない
+* 開発環境の構築に手間がかかる
+
+と言った問題が発生していました．
+
+そこで，WebアプリケーションのDockerコンテナへの分離と，SSL化を行いました．
+
+その際，本番環境での作業に備え，アプリケーションのDockerizeと，メンテナンス手順の確認等を行いました．
+こうした準備を事前に行っていたものの，作業量が多かったこと，夜間作業であったこともあり，
+自身への負担が大きく大変な作業でした．
+
+## 経歴
+とりあえず公開できそうなものだけ書いてます．
+
+* 2013年4月 大学に入学
+* 2014年3月 Web系の企業にアルバイトとして入社
+  - PHPでのバックエンド開発
+* 2014年6月 同社 退社
+* 2014年10月 Web系の企業にアルバイトとして入社
+  - PHPでのバックエンド開発
+* 2015年3月 同社 退社
+* 2015年11月 大学を退学 
+* 2015年7月 Web系の企業にアルバイトとして入社 
+  - PHP製CMSシステムの保守・開発
+  - CMSシステムを利用したWebページ制作(コーディング作業)
+  - cocos2d-x(c++)での新規ゲームアプリ開発
+* 2016年9月 同社退社(アルバイト)
+* 2016年11月 大学に再入学
+* 2017年8月 社内向けスマホアプリの開発を担当
+  - Ionic Frameworkを利用したハイブリッドアプリの開発
+  - Node.jsでのバックエンドAPIの実装
+* 2017年8月 LINEボット(商品カタログボット)の開発
+  - Node.jsでのLINEボット実装
+* 2018年2月 [Supporterz Code Challenge 2nd](https://supporterz.jp/spevents/detail/spz_code_challenge_2017_2nd) 優勝
