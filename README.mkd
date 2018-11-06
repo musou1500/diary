@@ -3,3 +3,10 @@
 このレポジトリは，私(musou1500) が日記を書き溜めていくためのものである．
 日々読んだ論文や，技術的な学習の内容，あるいは技術には全く関係のないものについても，
 とりあえず雑多に書いてここに残しておこうと思う．
+
+## 記事
+
+* [プロフィール](./profile.mkd)
+* [incremental-domとは何なのか](./what-is-the-incremental-dom.mkd)
+* ["低レイヤを知りたい人のための Cコンパイラ作成入門" を読み始めた](./compiler-book-9cc.mkd)
+* ["Exploring Mobile Wifi Handler with Multipath TCP" を読んだ](./Exploring-Mobile-WiFi-Handover-with-Multipath-TCP.mkd)
