@@ -91,6 +91,8 @@ incremental-domを理解するため，自分で簡単な実装を書き，そ�
 
 ![](./idom-todo-screenshot.gif)
 
+今後，時間が出来たときにでも，パーティクルを表示させるものを作るなどして，
+仮想DOMとのパフォーマンス比較をやってみたいと考えている．
 
 ## incremental-domの利点
 
