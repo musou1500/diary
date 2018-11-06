@@ -84,6 +84,12 @@ function render(state) {
 
 このようになる．
 
+## デモ
+
+incremental-domを理解するため，自分で簡単な実装を書き，それを使ってTODOアプリを動かしてみた．
+[https://github.com/musou1500/toy-idom](https://github.com/musou1500/toy-idom)
+
+![](./idom-todo-screenshot.gif)
 
 
 ## incremental-domの利点
