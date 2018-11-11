@@ -6,6 +6,7 @@
 
 ## 記事
 
+* [Ionic v4 Beta 15がリリースされた](./release-ionic-4-beta15.mkd)
 * [プロフィール](./profile.mkd)
 * [incremental-domとは何なのか](./what-is-the-incremental-dom.mkd)
 * ["低レイヤを知りたい人のための Cコンパイラ作成入門" を読み始めた](./compiler-book-9cc.mkd)
