@@ -1,0 +1,148 @@
+# Ionic v4 Beta 15がリリースされた
+
+日本時間の11/2日の深夜，Ionic v4 Beta 15がリリースされた．
+
+公式ブログにおいてもアナウンスされている．
+[Ionic Release: v4 Beta 15 – Out Today!](https://blog.ionicframework.com/ionic-release-v4-beta-15-out-today/)
+
+本記事では，このリリースで加えられたいくつかの変更について紹介する．
+
+
+## 変更点
+### CSS変数のAPI安定化
+
+CSS Variables (CSS変数)とは，読んで字のごとくCSS で変数が使える機能である．
+[CSS のカスタムプロパティ (変数) の利用](https://developer.mozilla.org/ja/docs/Web/CSS/Using_CSS_variables)
+
+Ionic 4では，開発者はCSS変数を使用してIonicのコンポーネントをカスタマイズすることが可能である．
+例えば，`ion-button` の色を変更するには，以下のようにすれば良い．
+
+```css
+ion-button {
+  --color: #222;
+}
+```
+
+つまり，これはIonicをカスタマイズするためのAPIと言えるわけだが，
+このリリースでは，Ionic 4におけるCSS変数のAPIを安定化させるということだ．
+
+今後は，Ionicのカスタマイズ方法に関する情報をより含むように，ドキュメントを充実化に取り組む，としている．
+
+なお，CSS変数に関するドキュメントは下記ページにある．
+[CSS Variables](https://beta.ionicframework.com/docs/theming/css-variables/)
+
+
+### マテリアルデザインコンポーネントの更新
+
+マテリアルデザインは，アプリケーションが従うべき標準を概説する，ビジュアルデザインガイドである．このガイドは，UXを向上させるべく時折更新されている．
+このリリースでは，最新のガイドラインにより従うように，マテリアルデザインコンポーネントが更新されている．
+ただし，このリリースですべてのコンポーネントの変更が完了しているわけではなく，今後のリリースでも更新に取り組むとしている．
+
+### タブに関する変更
+タブはIonicにおいて，最も重要で，複雑なコンポーネントの一つである．
+これまで，タブに関する要望は多々あった．例えば，以下のようなものである．
+
+* タブボタンのうち一つを，通常のボタンにできないか
+* タブボタンの表示方法を変えられないか
+* タブに独自のアイコンを使用できないか
+
+> メモ: 
+> 「通常のボタン」というのは 単に `button`タグを使用できないか，ということだろうと思われる．
+> 従来のIonicでは，タブボタン用に専用のコンポーネントを使用する必要があった．
+
+しかし，タブはその裏側で多くのことを行っており，それらを達成するのは難しかった．
+このバージョンでは，タブをより柔軟なものにするため，使用方法が変更されている．
+
+Ionic 4 の Beta 15 以前では，タブを実装する際には以下のように書く．
+
+```html
+<ion-tabs>
+  <ion-tab label="Home" icon="home" href="/tabs/(home:home)">
+    <ion-router-outlet name="home"></ion-router-outlet>
+  </ion-tab>
+  <ion-tab label="About" icon="information-circle" href="/tabs/(about:about)">
+    <ion-router-outlet name="about"></ion-router-outlet>
+  </ion-tab>
+  <ion-tab label="Contact" icon="contacts" href="/tabs/(contact:contact)">
+    <ion-router-outlet name="contact"></ion-router-outlet>
+  </ion-tab>
+</ion-tabs>
+```
+
+コードからわかるように， `ion-tab` コンポーネントのプロパティで，表示するアイコンやテキストを設定するようになっている．そのため，見た目や振る舞いについては，あまり柔軟なカスタマイズはできない．
+
+
+
+一方，Beta 15からは，以下のように書く．
+
+```html
+<ion-tabs>
+  <ion-tab tab=”home-view”>
+    <ion-content></ion-content>
+    <!-- or -->
+    <ion-nav></ion-nav>
+    <!-- or -->
+    <ion-router-outlet></ion-router-outlet>
+  </ion-tab>
+  <ion-tab-bar slot="bottom">
+    <!-- No ion-tab, just a link that looks like a tab -->
+    <ion-tab-button href=”https://beta.ionicframework.com”>
+      <!-- <a href=”https://beta.ionicframework.com”> -->
+      <ion-icon name="globe"></ion-icon>
+      <ion-label>Schedule</ion-label>
+    </ion-tab-button>
+
+    <!-- No ion-tab, just a button that looks like a tab -->
+    <ion-tab-button (click)=”openCamera()”>
+      <ion-icon name="camera"></ion-icon>
+      <ion-label>Photo</ion-label>
+    </ion-tab-button>
+
+    <!-- Connected to ion-tab, on click will show the ion-tab with id home-view -->
+    <ion-tab-button tab=”home-view”>
+      <ion-icon name="home"></ion-icon>
+      <ion-label>Home</ion-label>
+    </ion-tab-button>
+  </ion-tab-bar>
+</ion-tabs> 
+```
+
+少し長いが，上記のコードでは，以下のようなことが行われている．
+
+1. `ion-tabs` は全体のレイアウトを包んでいる
+2. `ion-tab-bar` は，タブ内のボタンを含むタブバーを作成する
+3. `ion-tab-button` は，新しい要素で，タブバー内のボタンを作成するのに使う．クリックハンドラを設定することもできるし，静的なリンクとすることもできる．
+4. `ion-tab` は分離されたコンテナで， `ion-content` ，`ion-nav` または `ion-router-outlet` を持つ． `ion-tab-button` を `ion-tab` に接続するには， `tab` プロパティを両方に指定する必要がある．
+
+> メモ:
+> [Migration Guide](https://beta.ionicframework.com/docs/building/migration#navigation)には，
+> `ion-nav` は deprecated だと記述されているが，Ionic 3からの移行手順などの関係で，`ion-nav` を使う方が良いケースもあるかもしれない．
+
+上記の例では，一番下のボタンをタップすると，`tab` プロパティに `home-view` が指定されているので，`home-view` が指定されているタブがアクティブになる．
+
+また，このリファクタには，以下のような利点もある
+
+* タブバーをタブと独立したコンポーネントとして書くことができる
+* ナビゲーションさせることもできるし，プレーンなコンテンツ要素とすることもできる
+* shadow DOMで動作し，タブバーのカスタマイズを容易にする
+* タブバー内の要素を完全に制御できる
+* 要素をレンダリングする手法の異なる，他のフレームワークとうまく統合できる
+
+> メモ:
+> 2番目の利点について，`ion-tab` には `ion-content` を含むことが可能なので，
+> タブボタンをクリックした際に，特定のページへ遷移するだけでなく，単に `ion-content` 内のコンテンツを表示させるような使い方も可能だ，ということだと思われる．
+> なお，上記のコード例を見てもわかるとおり，必ずしも `ion-tab` を用意する必要はなく，例えばタブボタンにハンドラを設定しておけば，クリックした際にカメラを起動させる，といった使い方も可能である．
+> 3, 5番目についてはよく分かっていないので要調査としたい
+
+この変更で，それぞれのタブボタンを十分にカスタマイズできるようになり，より高度なタブレイアウトを実現できるようになった．
+また，この変更で，タブに関するissueがいくつか解決されている．
+
+> メモ:
+> `ionic-conference-app` は既に Ionic4 beta 15 に対応しており，ここでも新しいタブの書き方を確認できる．
+> [ionic-conference-app/tabs-page.html at d5e8596d61010f6c12e75cc316a2a2450bc708e4 · ionic-team/ionic-conference-app](https://github.com/ionic-team/ionic-conference-app/blob/d5e8596d61010f6c12e75cc316a2a2450bc708e4/src/app/pages/tabs-page/tabs-page.html)
+
+## まとめ
+Ionic 4では，できるだけAngularの仕組みをそのまま使うように設計されていて，よりAngularが持つ機能やツールの恩恵が受けられるようなっている．一方で，Ionicのコア部分はAngularと切り離され，フレームワークを選ばない設計になったのも魅力的だと思う．
+
+また，元記事やTwitterを見ていても，Ionic 4 Finalがリリースされるのもそう遠くはなさそうだ．
+いつその時が来ても大丈夫なように，移行準備を進めておきたい．
