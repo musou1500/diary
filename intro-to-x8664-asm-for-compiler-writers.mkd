@@ -159,7 +159,7 @@ idivq $5     # %rdx:%rax を5で割る．結果は %raxに置かれる
 
 ```asm
 movq b, %rax
-invq %rax
+incq %rax
 movq %rax, a
 ```
 
