@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* ["Introduction to X86-64 Assembly for Compiler Writers"を読んだ](./intro-to-x8664-asm-for-compiler-writers.mkd)
 * [9ccにローカル変数を実装した](./impl-local-var-in-9cc.mkd)
 * [Ionic v4 Beta 15がリリースされた](./release-ionic-4-beta15.mkd)
 * [incremental-domとは何なのか](./what-is-the-incremental-dom.mkd)
