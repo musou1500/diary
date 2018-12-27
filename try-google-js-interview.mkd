@@ -1,0 +1,367 @@
+# "JavaScript interview with a Google engineer" に挑戦した
+
+いつものようにYouTubeを徘徊していると，偶然以下のような動画を発見した．
+[JavaScript interview with a Google engineer](https://www.youtube.com/watch?v=10WnvBk9sZc)
+
+
+動画の概要欄によると，Googleのシニアエンジニアが，エンジニア志望の候補者にJavaScriptで面接を行う，という想定の，モックのインタビューのようだ．
+
+内容としては，与えられたテーマのプログラムを，面接官と会話しながら実装する，というもので，
+この動画では，2つの文字列について，"longest subsequence" を求める関数を実装する，という課題が与えられていた．
+例えば， `'A$BC'` と `'A&B&C'` が与えられた場合，`'ABC'` を返す．
+
+正直な所，私はこのような，アルゴリズム問題に苦手意識がある．
+しかし，今回はどういうわけか，予想外にすんなりとやりきることが出来た．
+日記に書くのにうってつけのネタが出来たわけだ．
+そういうわけで，その実装過程や考えていたことを残しておく．
+
+## フローを考える
+
+前述したように，私はアルゴリズム問題に苦手意識がある．
+こういった問題でも手癖で書ける程度の慣れもなく，また，やみくもに書いて達成できる自信もなかったので，おおよその処理の流れを考えることにした．
+
+考えられる単純なものは，文字から導出できる組み合わせをすべて試すことだ．
+例えば，`'A$BC'`(`s1`とする) と `'A&B&C'`(`s2`とする) が与えられた場合を考えてみる．
+
+組み合わせの元は，単に長さの短いもの，つまり `s1` を使えば良さそうだ．
+つまり，フローはこうだ．
+
+1. 短い方の文字列を選ぶ (この文字を`s1` ，もう一方を `s2` とする)
+2. `s1` から，`s1.length` 個の文字の組み合わせを導出する
+3. 導出した文字のいづれかが，`s2` の sub-sequence になっていれば，それ返り値とする
+4. sub-sequenceを発見できなかった場合 `s1.length - 1` の長さの組み合わせを導出し，繰り返し同様の処理を行う
+
+このような処理を行う関数 `longestSubSeq` を実装すれば良さそうだ．
+
+しかし，ここですべてを実装しようとすると頭がパンクしてしまうので，まずは上記フローのうち，
+2 の組み合わせを導出する処理を考えることにする．
+
+## 組み合わせを導出する
+
+組み合わせ導出する関数 `genSubSeqs` を考える．
+この関数は，文字列 `s` と，生成したい文字列長 `len` を受取り，
+組み合わせを配列で返せば良さそうだ．
+
+以下のような呼び出しを考えてみる．
+
+```js
+genSubSeqs('ABCD', 2);
+```
+
+この場合，以下の結果が得られれば良さそうだ．
+```js
+assert.deepStrictEqual(genSubSeqs('ABCD', 2), [
+  'AB',
+  'AC',
+  'AD',
+  'BC',
+  'BD',
+  'CD',
+]);
+```
+
+
+さて，私は脳内でどんな計算をやっただろうか．
+おそらく，以下のような計算をやっていたはずだ．
+1. まず，組み合わせの最初の文字として "A" を選ぶ
+2. 残りの "BCD" から，長さ `len - 1` の組み合わせを導出する(これは明らかで，"B"，"C"，"D"だ)
+3. 最初の文字として "B" を選び，同様の処理をする
+
+2 に着目すると，文字列から組み合わせを導出している．
+これは`genSubSeq` がやりたいことそのものなので，ここは再帰関数にできそうだ．
+つまり，`genSubSeq('ABC', len - 1)` と表現できる．
+
+組み合わせの文字列長が少ないので脳内で計算できたが，文字列長がより長い場合も正しく動くだろうか．
+不安なので，実装する前にテストを追加しておく．
+ここで，テストに書いた"期待する値"を間違えている．
+ケアレスミスとはいえ，私の頭のスペックのなさに驚くばかりだ．
+
+```js
+assert.deepStrictEqual(genSubSeqs('ABCD', 3), [
+  'ABC',
+  'ABD',
+  'BCD',
+]);
+```
+
+```js
+const genSubSeqs = (s, len) => {
+  // 長さが1の場合，答えは明らか
+  if (len === 1) {
+    return s.split('');
+  }
+  
+  const subseqs = [];
+  for (let i = 0; i <= s.length - len + 1; i++) {
+    // 最初の文字を選ぶ
+    const fst = s.substr(i, 1);
+
+    // 残りの文字から組み合わせを導出
+    const restSubseqs = genSubSeqs(s.substr(i + 1), len - 1);
+
+    // 最初の文字と結合し，答えに追加する
+    for (let subseq of restSubseqs) {
+      subseqs.push(`${fst}${subseq}`);
+    }
+  }
+
+  return subseqs;
+};
+```
+
+さて，テストを実行するとエラーが出た．
+ここで，先程の間違いに気づき，テストに `'ACD'` を追加する．
+(実は他にも，`s.length` とする箇所を `s.len` としていて1分ほど詰まったが，これは割愛する)
+
+再度テストを実行した所，問題なさそうだ．次のステップへ進もう．
+
+さて，以下の処理を `longestSubSeq` に書いてみる．
+> 1. 短い方の文字列を選ぶ (この文字を`s1` ，もう一方を `s2` とする)
+> 2. `s1` から，`s1.length` 個の文字の組み合わせを導出する
+
+これは， `genSubSeqs` を呼び出すだけなので難しくない．
+最初のフローによると，`s1.length` から１つづつ減らしながら組み合わせを求めるはずなので，
+for文もついでに書いておこう．
+
+```js
+const longestSubSeq = (s1, s2) => {
+  // 短い方の文字列を選ぶ
+  if (s1.length > s2.length) {
+    const tmp = s1;
+    s1 = s2;
+    s2 = tmp;
+  }
+  
+  for (let i = s1.length; i > 0; i--) {
+    const subseqs = genSubSeqs(s1, i);
+  }
+
+  return '';
+};
+
+```
+
+うまくできているはずだが，テストを通すには以下の項目を実装する必要がある．
+> 3. 導出した文字のいづれかが，`s2` の sub-sequence になっていれば，それ返り値とする
+
+### sub-sequenceかどうかをチェックする
+
+sub-sequence は，その文字を含む必要はなく，そのままの順番で出現すれば良いはずだ．
+つまり，導出した sub-sequence (`subseqs`) のそれぞれについて，以下の処理を行う
+
+1. `subseq`から文字を１つ取り出す(`s`とする)
+2. `s` が `s2` に含まれるか確認する
+3. 含まれれば，その位置を保存する
+4. 次の文字に対しても同じ処理を行い，前の文字より後に出現していることを確認する
+
+この処理を `longestSubSeq` に書き足してみる．
+
+```js
+const longestSubSeq = (s1, s2) => {
+  // 短い方の文字列を選ぶ
+  if (s1.length > s2.length) {
+    const tmp = s1;
+    s1 = s2;
+    s2 = tmp;
+  }
+  
+  for (let i = s1.length; i > 0; i--) {
+    const subseqs = genSubSeqs(s1, i).filter(subseq => {
+      const prevIdx = 0;
+      for (let i = 0; i < s1.length; i++) {
+        // 文字を1つ取り出す
+        const s = s1.substr(i, 1);
+
+        // 文字を含み，かつ前の文字より後に出現していることを確認する
+        if (s2.indexOf(s) < prevIdx) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (subseq.length > 0) {
+      return subseq;
+    }
+  }
+
+  return '';
+};
+
+```
+
+また，ここにきて `longestSubSeq` のテストを書いていないことに気づいた．
+おそらく， `longestSubSeq` は以下のように動作するはずだ．
+
+```js
+// 共通する sub-sequence がなければ，空文字を返す
+assert.strictEqual(longestSubSeq('ABC', 'DEFG'), '');
+
+// 最長の sub-sequence を文字列で返す
+assert.strictEqual(longestSubSeq('A$BC', 'A&B&C'), 'ABC');
+```
+
+テストを動作させてみると，うまく動いているようだ．
+これで完了としても良いのだが2つほど不安が残っている．
+
+## リファクタリング
+
+残る不安点は2つだ．
+
+１つは，sub-sequenceのチェックに関するものだ．
+このチェックはある程度複雑に感じるので，別の関数に切り出し，テストを書いておきたい．
+
+振る舞いとしては，`s1` と `s2` を受取り，`s1`が`s2`のsub-sequenceかどうかを真偽値で返したい．
+つまり，テストコードはこうだ．
+
+```js
+assert.strictEqual(isSubseq('ABC', 'A&B&C'), true);
+assert.strictEqual(isSubseq('ABC', 'A&C&D'), false);
+assert.strictEqual(isSubseq('A,BC', 'A&C&D'), false);
+```
+
+実装に関しては，`longestSubSeq` から切り出すのみなので，そう難しくない．
+
+```js
+
+// `s1` が `s2` の sub-sequenceかどうかを真偽値で返す
+const isSubseq = (s1, s2) => {
+  const prevIdx = 0;
+  for (let i = 0; i < s1.length; i++) {
+    const s = s1.substr(i, 1);
+    if (s2.indexOf(s) < prevIdx) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const longestSubSeq = (s1, s2) => {
+  if (s1.length > s2.length) {
+    const tmp = s1;
+    s1 = s2;
+    s2 = tmp;
+  }
+
+  for (let i = s1.length; i > 0; i--) {
+    // チェック処理を `isSubseq` に切り出した
+    const subseq = genSubSeqs(s1, i).find(subseq => isSubseq(subseq, s2));
+    if (subseq !== undefined) {
+      return subseq;
+    }
+  }
+
+  return '';
+};
+
+```
+
+テストを実行してみると，問題なく通っているようだ．
+
+2つめの不安は，チェック処理やり方に関してだ．
+現段階では，`Array.prototype.filter` を使っている．これはすべての要素に対して，与えられた関数を適用する．
+しかし，1つの値が条件を満たしていれば，残りのチェックはスキップできるはずなので，ここは `Array.prototype.find` に置き換えたい．
+
+変更部分のみを抜粋すると，以下のようになる．
+```js
+const subseq = genSubSeqs(s1, i).find(subseq => isSubseq(subseq, s2));
+  if (subseq !== undefined) {
+    return subseq;
+  }
+};
+```
+
+ここで再度テストを実行した所，問題なさそうだ．
+今回はここで完了としたい．
+
+最後に，全体のコードを貼っておく．
+
+```js
+const assert = require('assert');
+
+// return s1 is subseq of s2
+const isSubseq = (s1, s2) => {
+  const prevIdx = 0;
+  for (let i = 0; i < s1.length; i++) {
+    const s = s1.substr(i, 1);
+    if (s2.indexOf(s) < prevIdx) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const longestSubSeq = (s1, s2) => {
+  if (s1.length > s2.length) {
+    const tmp = s1;
+    s1 = s2;
+    s2 = tmp;
+  }
+
+  for (let i = s1.length; i > 0; i--) {
+    const subseq = genSubSeqs(s1, i).find(subseq => isSubseq(subseq, s2));
+    if (subseq !== undefined) {
+      return subseq;
+    }
+  }
+
+  return '';
+};
+
+const genSubSeqs = (s, len) => {
+  if (len === 1) {
+    return s.split('');
+  }
+
+  const subseqs = [];
+  for (let i = 0; i <= s.length - len + 1; i++) {
+    const fst = s.substr(i, 1);
+    const restSubseqs = genSubSeqs(s.substr(i + 1), len - 1);
+    for (let subseq of restSubseqs) {
+      subseqs.push(`${fst}${subseq}`);
+    }
+  }
+
+  return subseqs;
+};
+
+assert.deepStrictEqual(genSubSeqs('ABCD', 2), [
+  'AB',
+  'AC',
+  'AD',
+  'BC',
+  'BD',
+  'CD',
+]);
+
+assert.deepStrictEqual(genSubSeqs('ABCD', 3), [
+  'ABC',
+  'ABD',
+  'ACD',
+  'BCD',
+]);
+
+assert.strictEqual(longestSubSeq('ABC', 'DEFG'), '');
+assert.strictEqual(longestSubSeq('A$BC', 'A&B&C'), 'ABC');
+assert.strictEqual(isSubseq('ABC', 'A&B&C'), true);
+assert.strictEqual(isSubseq('ABC', 'A&C&D'), false);
+assert.strictEqual(isSubseq('A,BC', 'A&C&D'), false);
+console.log('OK');
+```
+
+## 感想
+
+要した時間は30分ほどだっただろうか．比較的スムーズに実装できたと思う．
+実装はさほど難しくなかったかもしれない．
+しかし，これを面接官とのコミュニケーション込みで行うとなると，やりきる自信はない．
+
+試しに面接官とのコミュニケーションを想定するつもりで，独り言を言いながらやってみたのだが，喋りながら考える，ということが全く出来ない．英語で話す必要があるならなおさらだ．
+
+仮に1~2分の沈黙が許されたとしても，私は緊張にめっぽう弱い方なので，やりきることはできなかっただろう．
+
+実装や思考の内容のみを見ると，そう悪い結果ではないようにも思えるが，他の要因が邪魔をしている気がする．
+私自信，コミュニケーションや，ある種の器用さなど，技術に直接関係しない部分に興味を持っていないフシがあるので，そこを見直す必要はあるのかもしれない．
+
