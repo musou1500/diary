@@ -141,7 +141,18 @@ const longestSubSeq = (s1, s2) => {
 
 ```
 
-うまくできているはずだが，テストを通すには以下の項目を実装する必要がある．
+また，ここにきて `longestSubSeq` のテストを書いていないことに気づいた．
+おそらく， `longestSubSeq` は以下のように動作するはずだ．
+
+```js
+// 共通する sub-sequence がなければ，空文字を返す
+assert.strictEqual(longestSubSeq('ABC', 'DEFG'), '');
+
+// 最長の sub-sequence を文字列で返す
+assert.strictEqual(longestSubSeq('A$BC', 'A&B&C'), 'ABC');
+```
+
+ここまでうまくできているはずだが，テストを通すには以下の項目を実装する必要がある．
 > 3. 導出した文字のいづれかが，`s2` の sub-sequence になっていれば，それ返り値とする
 
 ### sub-sequenceかどうかをチェックする
@@ -190,18 +201,6 @@ const longestSubSeq = (s1, s2) => {
 };
 
 ```
-
-また，ここにきて `longestSubSeq` のテストを書いていないことに気づいた．
-おそらく， `longestSubSeq` は以下のように動作するはずだ．
-
-```js
-// 共通する sub-sequence がなければ，空文字を返す
-assert.strictEqual(longestSubSeq('ABC', 'DEFG'), '');
-
-// 最長の sub-sequence を文字列で返す
-assert.strictEqual(longestSubSeq('A$BC', 'A&B&C'), 'ABC');
-```
-
 テストを動作させてみると，うまく動いているようだ．
 これで完了としても良いのだが2つほど不安が残っている．
 
