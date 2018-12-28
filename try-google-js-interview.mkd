@@ -1,3 +1,9 @@
+---
+tags:
+- プログラミング
+- JavaScript
+---
+
 # "JavaScript interview with a Google engineer" に挑戦した
 
 いつものようにYouTubeを徘徊していると，偶然以下のような動画を発見した．

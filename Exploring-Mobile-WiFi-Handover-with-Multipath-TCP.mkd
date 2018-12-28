@@ -1,3 +1,8 @@
+---
+tags:
+- mptcp
+---
+
 # "Exploring Mobile Wifi Handler with Multipath TCP" を読んだ
 
 PDFは下記リンクを．論文タイトルで調べると出てくる．

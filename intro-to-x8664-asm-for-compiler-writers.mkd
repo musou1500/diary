@@ -1,3 +1,8 @@
+---
+tags:
+- プログラミング
+---
+
 # "Introduction to X86-64 Assembly for Compiler Writers"を読んだ
 
 コンパイラ開発の調査，勉強がてら， ["Introduction to X86-64 Assembly for Compiler Writers"](https://www3.nd.edu/~dthain/courses/cse40243/fall2015/intel-intro.html) という資料を読んだ．

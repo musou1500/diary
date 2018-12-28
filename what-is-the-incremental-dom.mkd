@@ -1,3 +1,9 @@
+---
+tags:
+- プログラミング
+- フロントエンド
+---
+
 # incremental-domとは何なのか
 
 どうやら，Angularの新しいレンダリングエンジンであるIvyには，incremental-dom という技術が採用されているらしい．incremental-domとは一体どういった技術なのだろうか．
