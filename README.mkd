@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [自作OS "vidar" を作っている話](./started-making-home-made-os-vidar.mkd)
 * ["JavaScript interview with a Google engineer" に挑戦した](./try-google-js-interview.mkd)
 * [ "低レイヤを知りたい人のための Cコンパイラ作成入門" を読み終えた](./finished-reading-compilerbook.mkd)
 * ["Introduction to X86-64 Assembly for Compiler Writers"を読んだ](./intro-to-x8664-asm-for-compiler-writers.mkd)
