@@ -11,12 +11,20 @@
 
 ## GitHub
 公開できそうなものをいくつか．
-
+* [musou1500/mc-friedpotato](https://github.com/musou1500/mc-friedpotato)
+  - Minecraftに「フライドポテト」を追加するMod
+* [musou1500/jp-num-parser](https://github.com/musou1500/jp-num-parser)
+  - 「四千九十六」や「二の3乗」のような，漢字表現の数字をパースするプログラム
+* [musou1500/vidar](https://github.com/musou1500/vidar)
+  - 学習目的に開発している自作OS
 * [musou1500/compilerbook-9cc](https://github.com/musou1500/compilerbook-9cc)
-* [musou1500/moi-fizzbuzz](https://github.com/musou1500/moi-fizzbuzz)
+  - 学習目的に開発している自作Cコンパイラ
 * [musou1500/twitter-autorename](https://github.com/musou1500/twitter-autorename)
+  - Twitterでの自分へのリプライに反応し，名前を変更するプログラム
 * [musou1500/toy-idom](https://github.com/musou1500/toy-idom)
+  - incremental-domの仕組みを理解するために，独自の実装を行ったもの
 * [musou1500/bf.js (gist)](https://gist.github.com/musou1500/adbbaf57e1ebf27c8f63600de37ccecc)
+  - JavaScriptで実装したBrainf\*ckの処理系
 
 OSSのプロジェクトにPRを出したもの．
 * [line/line-bot-sdk-nodejs Support richmenu api #34](https://github.com/line/line-bot-sdk-nodejs/pull/34)
