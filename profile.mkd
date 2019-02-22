@@ -11,6 +11,7 @@
 
 ## GitHub
 公開できそうなものをいくつか．
+
 * [musou1500/mc-friedpotato](https://github.com/musou1500/mc-friedpotato)
   - Minecraftに「フライドポテト」を追加するMod
 * [musou1500/jp-num-parser](https://github.com/musou1500/jp-num-parser)
@@ -25,6 +26,10 @@
   - incremental-domの仕組みを理解するために，独自の実装を行ったもの
 * [musou1500/bf.js (gist)](https://gist.github.com/musou1500/adbbaf57e1ebf27c8f63600de37ccecc)
   - JavaScriptで実装したBrainf\*ckの処理系
+* [musou1500/bf.js (gist)](https://gist.github.com/musou1500/adbbaf57e1ebf27c8f63600de37ccecc)
+  - JavaScriptで実装したBrainf\*ckの処理系
+* [musou1500/binary-tree.js (gist)](https://gist.github.com/musou1500/50b1a28f239686938d13b53001babbc6)
+  - JavaScriptによる，二分探索木の挿入・削除・回転の実装
 
 OSSのプロジェクトにPRを出したもの．
 * [line/line-bot-sdk-nodejs Support richmenu api #34](https://github.com/line/line-bot-sdk-nodejs/pull/34)
