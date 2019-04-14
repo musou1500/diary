@@ -1,0 +1,164 @@
+# entity-metareducersに関する考察・提案
+
+## 問題点
+
+### 似たようなアクションを大量に作る必要がある．
+
+@ngrx/entity 使い，エンティティの管理を行うフィーチャーモジュールを実装する時，別のモジュールからエンティティの操作を行うためには，専用のアクションを用意する必要がある．この場合，アプリケーション全体を通して，似たようなアクションが大量に存在してしまう．
+
+例えば，以下のような `UserStoreModule` を考える
+
+```typescript
+
+// user-store.module.ts
+export interface UserState {
+  entity: EntityState<{ id: string; name: string }>;
+}
+
+@NgModule({
+  imports: [
+    StoreModule.forFeature('user', { reducers })
+  ]
+})
+export class UserStoreModule {}
+```
+
+この場合，他のモジュール等から `User` エンティティに関する操作を行いたい場合，以下のようにアクションをディスパッチしなければならないため，アクションを提供する必要がある．
+例えば，APIからのレスポンスをストアに登録したい，という場合は以下のようになる．
+
+```typescript
+@Effect()
+something$ = this.action$.pipe(
+  // some operators...
+  switchMap(() => 
+    httpClient.get<User[]>('/users').pipe(
+      mergeMap(users => [
+        upsertUsers({ users }),
+        fetchUsersSuccess({ users })
+      ])
+    )
+  )
+);
+```
+
+`User` 以外のエンティティを追加する時，同様にエンティティの操作を行うアクションを追加する必要がある．結果的に，アプリケーション全体を通して，似たようなアクションが大量に存在してしまうことになる．
+
+### アクションに伴うエンティティの更新に一貫性を持たせる
+
+あるアクションを実行する際に，同時にエンティティの操作も行いたいケースを考える．
+これを実現するために，アクションをディスパッチする際に，同時にエンティティ操作を行うアクションをディスパッチする方法が考えられる．
+しかし，アクションをディスパッチする箇所で，常にエンティティの更新が行われるとは限らないため
+アクションのディスパッチ側でエンティティの操作を担保することは望ましくない．
+
+例えば，先のケースの以下のコードについて．
+
+```typescript
+mergeMap(users => [
+  upsertUsers({ users }),
+  fetchUsersSuccess({ users })
+])
+```
+
+このケースでは，`User` をAPIから取得したため，`fetchUsersSuccess` をディスパッチすると同時に`upsertUsers` を発火することでエンティティの更新を行っている．
+
+しかし， `fetchUsersSuccess` をディスパッチする際に `upsertUsers` が ディスパッチされるかは，アクションをディスパッチする側に委ねられており，複数箇所で `fetchUsersSuccess` を使用する場合には問題となる．
+
+## 解決方法
+
+この問題を解決するために，`entity-metareducers` を提案する．
+`entity-metareducers`では，エンティティの管理に責任を持つモジュールを作成する．
+(アプリケーションの規模によって，これを分割しても良い)
+
+```typescript
+import { metaReducers } from 'entity-metareducers';
+
+export interface CollectionState {
+  Users: EntityState<User>,
+  Articles: EntityState<Articles>,
+  Comments: EntityState<Comments>,
+}
+
+export actionCreators = createActionCreators<CollectionState>();
+
+@NgModule({
+  imports: [
+    StoreModule.forFeature('collection', { metaReducers })
+  ]
+})
+export class CollectionStoreModule {}
+```
+
+
+`entity-metareducers`は，以下の`EntityAdapter`のメソッドに対応する関数を提供する．
+
+* withAddOne
+* withAddMany
+* withAddAll
+* withRemoveOne
+* withRemoveOne
+* withRemoveMany
+* withRemoveMany
+* withRemoveMany
+* withRemoveAll
+* withUpdateOne
+* withUpdateMany
+* withUpsertOne
+* withUpsertMany
+* withMap
+
+これらの関数は，アクションを返す関数を引数にとり，新しい関数を返す．
+返された関数は，引数に取った関数が返すアクションに，`entityMeta` プロパティを追加したものを返す．
+`entityMeta` プロパティは，そのアクションがディスパッチされる際に行われるエンティティの操作を表す．
+
+
+例えば，以下のように使用される．
+
+```typescript
+
+export const fetchUsersSuccess = actionCreators.withUpsertMany(
+  // コレクションの名前
+  'Users',
+
+  // アクション(fetchUsersSuccess) を引数にとり，エンティティを返す
+  action => action.users,
+
+  // 通常のアクション
+  createAction('[User] Fetch Users Success', props<{ users: User[] }>)
+);
+
+// `fetchUsersSuccess` は以下のようなアクションを返すようになる
+//
+// {
+//   type: '[User] Fetch Users Success',
+//   users: [...],
+//   entityMeta: {
+//     actions: [
+//        {
+//          type: '[Entity] UpsertMany',
+//          entities: [...],
+//          collection: 'User'
+//        }
+//     ]
+//   }
+// }
+
+
+```
+
+`entityMeta` が付加されたアクションは，`entity-metareducers` モジュールの metaReducer を通すことで，
+元々のアクションに加え，エンティティの操作に関するアクションがディスパッチされる．
+metaReducerの簡易的な実装は以下のようになる．
+
+```typescript
+function metaReducer(reducer) {
+  return (action, state) => {
+    if (!('entityMeta' in action)) {
+      return reducer(action, state);
+    }
+    
+    const entityActions = action.entityMeta.actions;
+    const newState = entityActions.reduce((prev, cur) => reducer(cur, prev), state);
+    return reducer(action, newState);
+  }
+}
+```
