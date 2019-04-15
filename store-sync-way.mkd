@@ -1,0 +1,90 @@
+# Storeから同期的に値を取りたい，という話
+
+@ngrx/storeは，Angularのための状態管理のライブラリである．
+このライブラリはReduxアーキテクチャを採用していて，`BehaviorSubject` を継承した `Store`を購読することで，状態を取得する．
+例えば，コンポーネントで`Store`を購読するシンプルな例は以下のようになる．
+
+```typescript
+@Component({
+  selector: 'app-some-component',
+  template: `
+    <ng-container *ngIf="isLoading$ | async">
+      // something
+    </ng-container>
+  `
+})
+export class AppSomeComoponent {
+  isLoading$ = this.store.pipe(select(getIsLoading());
+  constructor(private store: Store<any>) {}
+}
+```
+
+`async`パイプを使えば，状態が更新されたときに子コンポーネントにそれを通知することもできる．
+
+ただし，その時点で最新の値を一度だけ使いたい，というケースもあると思う．
+例えば，状態を元に何らかのアクションを作りたい場合など．
+
+```typescript
+// Storeに入れてあるフォームの値を取得して，保存する
+this.store.pipe(
+  select(getArticleFormValue),
+  first()
+).subscribe(formValue => this.store.dispatch(saveArticle(formValue)));
+```
+
+記事の最初で述べたように， `Store` は `BehaviorSubject` を継承しているので，
+最後に流れた値を記憶していて，`subscribe`されたときにそれを流してくれる．
+つまり，現在の状態を取得するだけなら(理論的には)同期的に処理できるはずだし，
+その方が簡潔に書けるはずだ．
+
+そのことを考えると，上のコードは少々冗長かもしれない．
+この解決方法として，2つの方法を思いつく(rxjsの非公開APIを叩くことは考えない)．
+
+## 値を変数にキャッシュする
+
+コンポーネントのプロパティに値をキャッシュしておけば，好きなときにそこにアクセスできる．
+つまりこういうことだ．
+
+```typescript
+
+function cache<T>(obs: Observable<T>): { value: T } {
+  const cache = { value: null };
+  obs.subscribe(val => cache.value = val);
+  return cache;
+}
+
+// 値が流れる度に，それをプロパティにキャッシュする
+this.cached = cache(
+  this.store.pipe(
+    select(getArticleFormValue),
+    untilDestroyed(this)
+  )
+);
+
+// 好きなときに同期的に取得できる
+this.store.dispatch(saveArticle(this.cached.value));
+```
+
+## Promiseを使う
+
+または，Promiseとasync/awaitを組み合わせることで，同期的に値を取得できる．
+
+```typescript
+
+// 最初の値をPromiseにして返すヘルパ関数
+function firstAsPromise<T>(obs: Observable<T>) {
+  return obs.pipe(first()).toPromise();
+}
+
+
+// async/awaitで同期的に取得できる
+const formValue = await firstAsPromise(this.store.pipe(select(getArticleFormValue));
+this.store.dispatch(saveArticle(formValue));
+```
+
+## 考察
+
+要はキャッシュをプロパティに切り出すかどうか，という違いなので，どの範囲で使いたいかで判断すると良さそう．
+
+[akita](https://github.com/datorama/akita)ではこの辺りをうまいことやっていて，内部的に非公開APIにアクセスして返す，という同期的なメソッドを提供している．
+この方法が一番手数が少なく済むと思うので，互換性に関して楽観的になれるならそうするのも選択肢の一つだと思う．

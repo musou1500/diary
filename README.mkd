@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [storeから同期的に値を取りたい，という話](./store-sync-way.mkd)
 * [entity-metareducersに関する考察・提案](./memo-entity-metareducer.mkd)
 * [自作OS "vidar" を作っている話](./started-making-home-made-os-vidar.mkd)
 * ["JavaScript interview with a Google engineer" に挑戦した](./try-google-js-interview.mkd)
