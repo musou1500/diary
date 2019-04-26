@@ -25,3 +25,8 @@ READMEを読むことをサボったために3時間ほど格闘することに�
 このDockerfileは実際にはあまり使われてないのかもしれない．
 
 と，いう文句をここで言うだけなのはなんだか良くない気もするので，後日パッチを送ろう．
+
+## 追記
+
+Pull-Requestを出した．
+[Fix docker configuration by musou1500 · Pull Request #33 · nttdots/go-dots](https://github.com/nttdots/go-dots/pull/33)
