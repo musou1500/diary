@@ -1,0 +1,103 @@
+# Laravelで認証APIを実装する
+
+Laravelには，以下の機能をサポートした組み込みの認証機能がある．
+
+* 登録
+* ログイン
+* パスワード変更
+* パスワード再設定(所謂パスワードリマインダー)
+
+これらは，フロントエンドをWebアプリケーションとして開発することを想定していて，
+スマホアプリのバックエンドAPI等のユースケースでは少々工夫が必要になる．
+
+組み込みの認証機能をjson APIとして提供したい場合どうすべきかを調査したので，この記事にまとめておく．
+
+## 調査結果
+
+以下のコントローラについて，
+* ForgotPasswordController
+* ResetPasswordController
+* LoginController
+* RegisterController
+* VerificationController
+
+これらのコントローラは，基本的にはLaravelで実装されているトレイトに処理を移譲しているのみである．
+それぞれのコントローラとトレイトとの対応は以下の通りである．
+
+| Controller               | Trait                    |
+| :--                      | :--                      |
+| ForgotPasswordController | SendsPasswordResetEmails |
+| ResetPasswordController  | ResetsPasswords          |
+| LoginController          | AuthenticatesUsers       |
+| RegisterController       | RegistersUsers           |
+| VerificationController   | VerifiesEmails           |
+
+例えば `ForgotPasswordController` は，以下のように実装されている．
+
+```php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+
+class ForgotPasswordController extends Controller
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Password Reset Controller
+    |--------------------------------------------------------------------------
+    |
+    | This controller is responsible for handling password reset emails and
+    | includes a trait which assists in sending these notifications from
+    | your application to your users. Feel free to explore this trait.
+    |
+    */
+
+    use SendsPasswordResetEmails;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('guest');
+    }
+}
+
+```
+
+しかし，これらのトレイトは，デフォルトでは処理完了後にレスポンスとしてリダイレクトを返すようになっている．
+今回は，jsonをレスポンスとして返したいので，トレイトのメソッドをオーバーライドして，jsonを返すようにする必要がある．
+
+`SendsPasswordResetEmails` の場合，以下のメソッドの戻り値がレスポンスとして使用される．
+
+* `sendResetLinkResponse`
+* `sendResetLinkFailedResponse`
+
+`SendsPasswordResetEmails` 以外のトレイトも， **VerifiesEmails** を除くと，このようなレスポンスを設定するためのメソッドが用意されている．
+
+### VerificationControllerについて
+
+`VerifiesEmails` トレイトは以下のメソッドを定義している．
+
+* show
+* verify
+* resend
+
+`resend` は確認メールの再送，`verify` は検証処理をそれぞれ行う．`show` は メールの再送を行うためのリンクと，ユーザにメールの確認を促す旨のメッセージを表示する．
+
+`show` は，実質メール再送のためのリンクを表示するのみであり， json apiの実装においては必要ない．
+
+`verify` と `resend` はレスポンスとしてリダイレクトを返すようになっている．
+他のトレイトのように，レスポンスを設定するためのメソッドも用意されていない．つまり， `verify` と `resend` をそのまま再実装する必要がある．
+ここで考えられる選択肢は2つ．
+
+* 別のトレイトを再実装する
+* `VerificationController` に `VerifiesEmails` の内容を再実装する
+
+なぜ `VerifiesEmails` に限ってレスポンスを設定するためのメソッドが用意されていないんだろう．．．．
+そもそもメール検証については，deep linkが必要になったりして面倒なので，素直にWebに切り出すのが楽かもしれない．

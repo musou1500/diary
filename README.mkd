@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [Laravelで認証APIを実装する](./building-auth-json-api-by-laravel.mkd)
 * [go-dotsをビルドしたかった](./building-go-dots.mkd)
 * [storeから同期的に値を取りたい，という話](./store-sync-way.mkd)
 * [entity-metareducersに関する考察・提案](./memo-entity-metareducer.mkd)
