@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [体調を崩した](./2019-06-got-sick.mkd)
 * [蟻本を読み始めた](./bought-ant-book.mkd)
 * [Laravelで認証APIを実装する](./building-auth-json-api-by-laravel.mkd)
 * [go-dotsをビルドしたかった](./building-go-dots.mkd)
