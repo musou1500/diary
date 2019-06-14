@@ -1,0 +1,185 @@
+# nimでWeb Assemblyをやってみる
+
+nimには，元々JavaScriptバックエンドが用意されていて，
+nimのプログラムをJavaScriptにコンパイルすることができる．
+最近話題の(要出典)Web Assemblyについても，公式にはサポートされていないものの，
+[emscripten](https://emscripten.org/)を利用することで，Web Assemblyへ吐き出すことができる．
+
+今回は，nimで実装した，階乗を求める関数をWebAssemblyにコンパイルし，JavaScriptから呼び出してみる．
+
+なお，今回実装したものは [musou1500/nim_wasm](https://github.com/musou1500/nim_wasm) で公開している．
+
+## 階乗を求める関数をnimで書く
+
+関数をJavaScriptから呼び出せるようにするため，[jsbind](https://github.com/yglukhov/jsbind)を使う．
+`EMSCRIPTEN_KEEPALIVE` というマクロが提供されており，これを関数に付ければ良い．
+
+この時気をつけるべきなのが，32ビット整数を使うことと，デフォルト引数が使えないことだ．
+ emscriptenから呼び出す関係上，64ビット整数では動作しない．
+
+```nim
+import jsbind/emscripten
+
+proc fact*(n: int32, acc: int32): int32 {.EMSCRIPTEN_KEEPALIVE.} =
+  if n <= 1: acc else: fact(n - 1, n * acc)
+```
+
+なお，大抵のCコンパイラであれば末尾呼び出し最適化を行ってくれるので，スタックについての心配はない．
+
+例えば，以下のようなプログラムを書いたとする．
+
+```c
+int fact(int n, int acc) {
+  if (n == 1) {
+    return acc;
+  }
+
+  return fact(n - 1, n * acc);
+}
+```
+
+このプログラムを最適化オプション付きでコンパイルすると，以下のようなアセンブリを吐き出してくれる．
+
+```
+fact:                                   # @fact
+	.cfi_startproc
+# %bb.0:
+	cmpl	$1, %edi
+	je	.LBB0_3
+	.p2align	4, 0x90
+.LBB0_1:                                # =>This Inner Loop Header: Depth=1
+	imull	%edi, %esi
+	addl	$-1, %edi
+	cmpl	$1, %edi
+	jne	.LBB0_1
+.LBB0_3:
+	movl	%esi, %eax
+	retq
+```
+
+細かい説明は省くが，以下のプログラムと同じだと考えて良い．
+```c
+int fact(int n, acc) {
+  while (n > 1) {
+    acc = n * acc;
+    n -= 1;
+  }
+
+  return acc;
+}
+```
+
+## emscriptenでコンパイルする
+
+nimをコンパイルする際，gccやclangの代わりにemccを呼び出したいので，
+以下の内容を`nim.cfg`として保存しておく．
+
+```nim.cfg
+@if emscripten:
+  cc = clang
+  clang.exe = "emcc"
+  clang.linkerexe = "emcc"
+  clang.options.linker = ""
+  cpu = "i386"
+  warning[GcMem]= off
+  passC = "-s WASM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['cwrap']\" -O3"
+  passL = "-s WASM=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['cwrap']\" -O3"
+@end
+```
+
+以下のコマンドを実行すると，`nim_wasm.js`と`nim_wasm.wasm`が吐き出される．
+```
+$ nim c -d:release -d:emscripten -o:nim_wasm.js nim_wasm.nim
+```
+
+## JavaScriptから関数を呼び出す
+
+emscriptenで出力したプログラムに含まれる関数を呼び出す方法はいくつかあるが，今回は`cwrap`を使う．
+`cwrap` は，以下のように
+
+* 関数名
+* 返り値の型
+* 引数の型
+
+を指定することで，JavaScriptから呼び出しやすいようにラップしてくれる．
+
+```
+Module['onRuntimeInitialized'] = function() {
+  const fact = Module.cwrap('fact', 'number', ['number', 'number']);
+  console.log(nimFact(3)); // 6
+};
+```
+
+これを，以下のようにスクリプトを読み込むようにした `index.html` を用意すれば実行できる．
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="./nim_wasm.js"></script>
+  <script src="./app.js"></script>
+  <title></title>
+</head>
+<body>
+  
+</body>
+</html>
+```
+
+## ベンチマークを取ってみる
+
+せっかくWeb Assemblyに吐き出したので，多少は速くなっていて欲しいものだ．
+そういうわけなので，[Benchmark.js](https://benchmarkjs.com/)を使ってベンチマークを取る．
+
+Benchmark.jsは，以下のようにcdnから利用できる．
+これを先程の `index.html`に追加すれば良い．
+
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/benchmark/2.1.4/benchmark.min.js"></script>
+```
+
+今回は，以下の3つの関数を実装し，パフォーマンスを比較する．
+
+* nimFact nimで実装した関数
+* factRec JavaScriptで実装した，再帰を用いて階乗を求める関数
+* factLoop JavaScriptで実装した，ループを用いて階乗を求める関数
+
+```js
+Module['onRuntimeInitialized'] = function() {
+  const nimFact = Module.cwrap('fact', 'number', ['number', 'number']);
+  const factRec = (n, acc) => n <= 1 ? acc : factRec(n - 1, n * acc);
+  const factLoop = (n, acc) => {
+    while (n > 1) {
+      acc = n * acc;
+      n = n - 1;
+    }
+
+    return acc;
+  };
+
+  const suite = new Benchmark.Suite;
+  suite.add('nimFact', () => nimFact(100))
+    .add('factRec', () => factRec(100))
+    .add('factLoop', () => factLoop(100))
+    .on('cycle', event => {
+      console.log(String(event.target));
+    })
+    .on('complete', () => {
+      console.log('Fastest is ' + suite.filter('fastest').map('name'));
+    })
+    .run({ 'async': true });
+};
+```
+
+結果は以下のようになった．
+
+| 関数     | ops/sec                  | サンプル数 |
+| :--      | :--                      | :--        |
+| nimFact  | 1,462,231 ops/sec ±4.23% | 48         |
+| factRec  | 1,075,855 ops/sec ±6.94% | 44         |
+| factLoop | 11,246,547 op/sec ±4.20% | 51         |
+
+JavaScriptで実装した関数の方が速い結果となった．
+emscripteに関連して，色々なオーバーヘッドがあるんだろうけど，意外な結果だ．
