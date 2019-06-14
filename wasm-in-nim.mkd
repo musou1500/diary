@@ -103,10 +103,10 @@ emscriptenで出力したプログラムに含まれる関数を呼び出す方�
 
 を指定することで，JavaScriptから呼び出しやすいようにラップしてくれる．
 
-```
+```js
 Module['onRuntimeInitialized'] = function() {
   const fact = Module.cwrap('fact', 'number', ['number', 'number']);
-  console.log(nimFact(3)); // 6
+  console.log(nimFact(3, 1)); // 6
 };
 ```
 
@@ -160,9 +160,9 @@ Module['onRuntimeInitialized'] = function() {
   };
 
   const suite = new Benchmark.Suite;
-  suite.add('nimFact', () => nimFact(100))
-    .add('factRec', () => factRec(100))
-    .add('factLoop', () => factLoop(100))
+  suite.add('nimFact', () => nimFact(10, 1))
+    .add('factRec', () => factRec(10, 1))
+    .add('factLoop', () => factLoop(10, 1))
     .on('cycle', event => {
       console.log(String(event.target));
     })
@@ -175,11 +175,11 @@ Module['onRuntimeInitialized'] = function() {
 
 結果は以下のようになった．
 
-| 関数     | ops/sec                  | サンプル数 |
-| :--      | :--                      | :--        |
-| nimFact  | 1,462,231 ops/sec ±4.23% | 48         |
-| factRec  | 1,075,855 ops/sec ±6.94% | 44         |
-| factLoop | 11,246,547 op/sec ±4.20% | 51         |
+| 関数     | ops/sec                   | サンプル数 |
+| :--      | :--                       | :--        |
+| nimFact  | 10,991,173 ops/sec ±4.23% | 54         |
+| factRec  | 19,453,389 ops/sec ±6.94% | 49         |
+| factLoop | 98,535,908 op/sec ±4.20%  | 52         |
 
 JavaScriptで実装した関数の方が速い結果となった．
 emscripteに関連して，色々なオーバーヘッドがあるんだろうけど，意外な結果だ．
