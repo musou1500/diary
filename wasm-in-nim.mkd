@@ -59,7 +59,7 @@ fact:                                   # @fact
 
 細かい説明は省くが，以下のプログラムと同じだと考えて良い．
 ```c
-int fact(int n, acc) {
+int fact(int n, int acc) {
   while (n > 1) {
     acc = n * acc;
     n -= 1;
