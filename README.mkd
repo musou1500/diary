@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [僕がV言語にやったこと](./2019-06-26-my-contributions-to-vlang.mkd)
 * [nimでWeb Assemblyをやってみる](./wasm-in-nim.mkd)
 * [体調を崩した](./2019-06-got-sick.mkd)
 * [蟻本を読み始めた](./bought-ant-book.mkd)
