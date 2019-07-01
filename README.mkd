@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [Twitterをお休みする](./2019-07-01-quit-twitter.mkd)
 * [GC付き言語 "RC" を作っている](./2019-06-30-dev-rc.mkd)
 * [僕がV言語にやったこと](./2019-06-26-my-contributions-to-vlang.mkd)
 * [nimでWeb Assemblyをやってみる](./wasm-in-nim.mkd)
