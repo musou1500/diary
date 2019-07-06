@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [作れるようになった料理](./2019-07-06-consines-i-can-make.mkd)
 * [V言語のrepl改善に思いを馳せる](./2019-07-03-think-about-v-repl.mkd)
 * [Twitterをお休みする](./2019-07-01-quit-twitter.mkd)
 * [GC付き言語 "RC" を作っている](./2019-06-30-dev-rc.mkd)
