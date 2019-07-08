@@ -1,0 +1,11 @@
+## Pure TypeScriptなJSONパーサ「json-js」を書いた
+
+先日．．．と言っても二週間ぐらい前になるんだけど，
+TypeScriptでJSONパーサの実装を書いた．
+
+[musou1500/json-js](https://github.com/musou1500/json-js)
+
+最近界隈でも「JSON.parseが速い」みたいなことが話題になってたけど，
+JSONはとてもシンプルなフォーマットで，[https://www.json.org/](https://www.json.org/) の説明を読みながらバーッとパーサを書くだけでとりあえず動くものができる．
+
+仕様からパーサを書き下す練習にちょうどよかったな，という感じだった．
