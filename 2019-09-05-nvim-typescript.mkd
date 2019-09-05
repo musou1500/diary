@@ -1,0 +1,32 @@
+# nvim-typescriptの紹介
+
+## TL;DR
+
+[nvim-typescript](https://github.com/mhartington/nvim-typescript)はいいぞ．
+
+## どんなプラグインなのか
+
+[nvim-typescript](https://github.com/mhartington/nvim-typescript)は，
+TypeScript向けに，IDEライクな機能をneovimに追加するプラグインである．
+
+具体的には，以下の機能が追加される．
+* コード補完
+* 定義ジャンプ
+* 識別子のリネーム
+* floating windowを用いた型・警告の表示
+* codefix
+* ドキュメント表示
+* Organize Imports
+
+## 類似するプラグインとの違い
+類似するプラグインは他にもあるが，それらと比べ以下の点はnvim-typescriptの魅力だと思う．
+
+* deopleteの補完ソースを提供している
+* floating windowを利用している
+* プラグインの大部分がTypeScriptで実装されている
+
+## 気になった点
+
+長時間編集していると，補完のレスポンスが遅くなるのが気になった．なんでだろう．
+あと，auto-importはまだ実装されてない．issueはあるので期待したい．
+[Autoimport suggestions as you type #125](https://github.com/mhartington/nvim-typescript/issues/125)
