@@ -1,0 +1,82 @@
+# Angular Workspace所感
+
+Angularでは，ワークスペースとプロジェクトという概念があって，
+ワークスペースが複数のプロジェクトを持てるような仕組みがある．
+
+これを使うと，いわゆるモノレポっぽい構成を作れるので，
+複数のアプリケーションを一つのレポジトリに突っ込んだり，npmに公開せずに複数のアプリケーション間でコードを共有したり，といったことが簡単にできる．
+
+
+## 使い方
+
+プロジェクトは「アプリケーション」と「ライブラリ」の2種類に分けられる．
+用途は言葉のとおりなんだけど，ライブラリは `package.json` や `ng-package.json` を独自に持つ点が異なっている．内部的には `ng-packagr` を使っているので，公開ライブラリの開発に使うこともできる．
+
+基本的には， `ng generate` コマンドでプロジェクトを生成する．
+
+### アプリケーション
+
+下記コマンドで生成できる．
+
+```
+$ ng generate application some-app
+```
+
+デフォルトのアプリケーションではない場合，ビルドやサーブする際にプロジェクト名を指定する必要がある．
+
+```
+$ ng serve some-app
+$ ng build some-app
+```
+
+### ライブラリ
+
+下記コマンドで生成できる．
+
+```
+$ ng generate library lib
+```
+
+このときに指定した名前(この例の場合は `lib`)が `compilerOptions.paths` に追加されるので，ビルドすればそのままインポートして使える．
+
+ビルドはアプリケーションのプロジェクトと同様，`ng build` コマンドが使える．
+
+```
+$ ng build lib
+```
+
+ライブラリをビルドする場合，常にAoTが行われる．
+
+## はまりどころ
+
+よく分からなかったのが，ライブラリを複数持つワークスペースで，
+ライブラリ間に依存関係がある場合の設定方法だ．
+
+詳しくは下記issueを見てほしいんだけど，こういったケースでは間違った型定義が生成されてしまうことがある．
+結果として依存元のプロジェクトをビルドする際にエラーが発生してしまう．
+
+[ng-packagr/ng-packagr: incorrect paths for import statement is generated #1405](https://github.com/ng-packagr/ng-packagr/issues/1405)
+
+これのワークアラウンドとしては，TypeScriptのpaths aliasの代わりに `npm link` を使うようにしている．
+例えば， `lib1` が `lib2` に，アプリケーションが `lib1`，`lib2`の両方に依存しているケースでは，以下のようにプロジェクトをビルドする．
+
+```package.json
+{
+  "scripts": {
+    "build:libs": "npm run build:lib1 && npm build:lib2",
+    "build:lib1": "ng build:lib1 && npm run link:lib1",
+    "build:lib2": "ng build:lib2 && npm run link:lib2",
+    "link:lib1": "cd dist/lib1 && npm link",
+    "link:lib2": "cd dist/lib2 && npm link",
+  }
+}
+```
+
+```bash
+$ npm run build:libs
+$ ng build
+```
+
+また， `ng generate` コマンドでプロジェクトを作った際には，`tsconfig.json` に追加されたpaths aliasの設定を消しておく．
+
+他からの依存があるライブラリのみこの`npm link`を使うこともできなくはないけど，そのあたりの判断とか使い分けが面倒で，`npm link` だけですべて解決できるんじゃないかと思ってる．
