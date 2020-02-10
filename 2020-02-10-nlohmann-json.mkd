@@ -1,0 +1,118 @@
+# C++でJSONを扱うには nlohmann/json が便利かもしれない
+
+JSONは良い．
+いろいろな言語でライブラリが実装されていて扱いやすく，言語によっては標準ライブラリでのサポートがある．
+
+[nlohmann/json](https://github.com/nlohmann/json)は，C++で実装されたヘッダオンリーのライブラリで，JSONを扱える．
+
+## 導入
+
+このライブラリを導入するには，[GitHubのリリースページ](https://github.com/nlohmann/json/releases)で配布されているヘッダファイルをダウンロードしてくれば良い．
+
+`json.hpp` となっているアセットがそうで，これをインクルードするだけで使える．
+
+## 使い方
+
+### 文字列 → JSON
+
+```cpp
+#include "./json.hpp"
+#include <iostream>
+
+using json = nlohmann::json;
+
+int main(int argc, const char *argv[])
+{
+  json j = "{ \"pi\": 3.141 }"_json;
+  double pi = j["pi"].get<double>();
+
+  // output "3.141"
+  std::cout << pi << "\n";
+  return 0;
+}
+```
+
+### JSON → 文字列
+
+```cpp
+#include "./json.hpp"
+#include <iostream>
+
+using json = nlohmann::json;
+
+int main(int argc, const char *argv[])
+{
+  json j = {{"pi", 3.141}};
+
+  // output '{"pi":3.141}'
+  std::cout << j.dump() << "\n";
+  return 0;
+}
+```
+
+
+### 他のデータフォーマットへの変換
+
+興味深いのが，他のデータ形式との相互変換をサポートしている点だ．
+
+```cpp
+#include "./json.hpp"
+
+using json = nlohmann::json;
+
+int main(int argc, const char *argv[])
+{
+  json j = {{"pi", 3.141}};
+
+  // jsonオブジェクトをcborへ
+  std::vector<std::uint8_t> v_cbor = json::to_cbor(j);
+  
+  // jsonオブジェクトをmsgpackへ
+  std::vector<std::uint8_t> v_msgpack = json::to_msgpack(j);
+
+  // cborデータからjsonオブジェクトを生成
+  json j_from_cbor = json::from_cbor(v_cbor);
+  return 0;
+}
+```
+
+### ユーザ定義型オブジェクトとの相互変換
+
+ユーザ定義型オブジェクトとjsonオブジェクトの相互変換が簡単にできる．
+
+```cpp
+#include "./json.hpp"
+#include <iostream>
+
+using json = nlohmann::json;
+
+struct User {
+  std::string name;
+  int age;
+};
+
+// ユーザ定義型オブジェクト → jsonオブジェクトへの変換
+void to_json(json& j, const User& user) {
+  j = json{{"name", user.name}, {"age", user.age}};
+}
+
+//  jsonオブジェクト → ユーザ定義型オブジェクトへの変換
+void from_json(const json& j, User& user) {
+  j.at("name").get_to(user.name);
+  j.at("age").get_to(user.age);
+}
+
+int main(int argc, const char *argv[])
+{
+  json j = "{ \"age\": 25, \"name\": \"musou1500\" }"_json;
+
+  // jsonオブジェクトをユーザ定義型オブジェクトへ
+  auto user = j.get<User>();
+  std::cout << "name: " << user.name << ", age: " << user.age << "\n";
+  
+  // ユーザ定義型オブジェクトをJSONへ
+  json j_from_user(user);
+  std::cout << j_from_user.dump() << "\n";
+  return 0;
+}
+```
