@@ -105,7 +105,7 @@ if (l < l_nums.size() && r < r_nums.size() && !parity) {
 ## 反省とか
 
 ACする前，再帰の部分を下のように書いていてWAをくらい，原因がわからずだった．
-```diff
+```cpp
   if (l == l_nums.size() && r == r_nums.size()) return acc;
   if (memo[l][r] < 0) {
     int l_max = -1, r_max = -1;
