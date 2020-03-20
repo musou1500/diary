@@ -1,0 +1,118 @@
+# Typical DP Contest 「B - ゲーム」を解いた
+
+最近は競プロやっているんだけど，どうも動的計画法を用いる問題ができていないような気がする．
+そういうわけで，練習がてら[Typical DP Contest](https://atcoder.jp/contests/tdpc)をやっている．
+
+「B - ゲーム」で案外苦戦してしまったので，反省を残しておこう．
+
+## ACしたコード
+
+提出したものはこれ．
+[提出 #11033109 - Typical DP Contest](https://atcoder.jp/contests/tdpc/submissions/11033109)
+
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+using Memo = vector<vector<int>>;
+
+int solve(
+    vector<int> &l_nums,
+    vector<int> &r_nums,
+    Memo &memo,
+    int l = 0,
+    int r = 0)
+{
+  if (l == l_nums.size() && r == r_nums.size()) return 0;
+  if (memo[l][r] < 0) {
+    bool parity = (l + r) % 2 == 0;
+    int l_max = 0, r_max = 0;
+    if (l < l_nums.size()) {
+      l_max = solve(l_nums, r_nums, memo, l + 1, r) + (parity ? l_nums[l] : 0);
+    }
+
+    if (r < r_nums.size()) {
+      r_max = solve(l_nums, r_nums, memo, l, r + 1) + (parity ? r_nums[r] : 0);
+    }
+
+    int res = max(l_max, r_max);
+    if (l < l_nums.size() && r < r_nums.size() && !parity) {
+      res = min(l_max, r_max);
+    }
+
+    memo[l][r] = res;
+  }
+
+  return memo[l][r];
+}
+
+int main(int argc, const char *argv[])
+{
+  int a, b;
+  cin >> a >> b;
+  vector<int> l_nums(a);
+  vector<int> r_nums(b);
+  for (int i = 0; i < a; i++) cin >> l_nums[i];
+  for (int i = 0; i < b; i++) cin >> r_nums[i];
+
+  Memo memo(a + 1, vector<int>(b + 1, -1));
+  cout << solve(l_nums, r_nums, memo) << "\n";
+  return 0;
+}
+```
+
+## 考え方
+
+再帰関数を使って，左の山と右の山，両方から物を取るパターンを試し，価値が最大になる方を選ぶ．
+関数の宣言は以下のようになる．
+
+```cpp
+int solve(
+    vector<int> &l_nums,
+    vector<int> &r_nums,
+    Memo &memo,
+    int l = 0,
+    int r = 0);
+```
+
+この関数は，左の山から `l` 個， 右の山から `r` 個物を取った状態で，
+その後最善を尽くしたときに得られる価値の合計を返す．
+
+注意点として，問題分に
+
+> 両者が最善を尽くしたとき、すぬけ君の取るものの価値の合計を求めよ。
+
+とあるので，すめけ君が得る価値の合計は含めないようにしなければならない．
+なお，`l` と `r` が与えられたとき，すぬけ君が操作する番かどうかは `(l + r) % 2 == 0` で得られる．
+
+また，「両者が最善を尽くす」とあるので，すめけ君が操作する番のときは，すぬけ君が得る価値が最小になるような選択をする．
+このあたりの処理をやっているのが下記の部分になる．
+
+```cpp
+int res = max(l_max, r_max);
+
+// 左の山と右の山が両方あまっていて，すめけ君の番のときは
+// 価値が最小になるようにする
+if (l < l_nums.size() && r < r_nums.size() && !parity) {
+  res = min(l_max, r_max);
+}
+```
+
+あと，このままだとTLEしてしまうので， `l` と `r` でメモ化すれば良い．
+
+## 反省とか
+
+ACする前，再帰の部分を下のように書いていてWAをくらい，原因がわからずだった．
+```diff
+  if (l == l_nums.size() && r == r_nums.size()) return acc;
+  if (memo[l][r] < 0) {
+    int l_max = -1, r_max = -1;
+    if (l < l_nums.size()) {
+      l_max = solve(l_nums, r_nums, memo, l + 1, r, parity ? acc + l_nums[l] : acc);
+    }
+```
+
+ゲーム開始時からの累計の価値を返すために `acc` を渡すことを意図していた．
+しかしよく考えると，メモ化に `l` と `r` を用いる場合，`l` と `r` が同じなら常に同じ結果を返すようにしなければならないので，これは正しく動作しない．
