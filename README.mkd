@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [ABC129 D - Lamp](./2020-05-05-abc129-d.mkd)
 * [Typical DP Contest 「B - ゲーム」を解いた](./2020-03-21-tdpc-b.mkd)
 * [C++でJSONを扱うには nlohmann/json が便利かもしれない](./2020-02-10-nlohmann-json.mkd)
 * [2019年のフロントエンド開発の振り返り・反省](./2020-01-03-redux-local-state.mkd)
