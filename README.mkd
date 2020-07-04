@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [ABC104 D: We Love ABC を別解で解いた](./2020-07-04-abc104-d.md)
 * [ABC129 D - Lamp](./2020-05-05-abc129-d.mkd)
 * [Typical DP Contest 「B - ゲーム」を解いた](./2020-03-21-tdpc-b.mkd)
 * [C++でJSONを扱うには nlohmann/json が便利かもしれない](./2020-02-10-nlohmann-json.mkd)
