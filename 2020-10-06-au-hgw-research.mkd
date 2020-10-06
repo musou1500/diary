@@ -265,7 +265,7 @@ Dynamic Host Configuration Protocol (Discover)
     Padding: 000000000000000000000000000000000000000000000000…
 ```
 
-こちらは正常にDHCP Offerが返ってきました．
+こちらは正常にDHCP Offerが返ってきた．
 次に，65535を設定した場合．
 
 ```
@@ -308,8 +308,8 @@ Dynamic Host Configuration Protocol (Discover)
     Padding: 000000000000000000000000000000000000000000000000…
 ```
 
-こちらの場合，DHCP Offerが返ってきませんでした．
-どうやらIPアドレスの更新ができないのは，HGW側の問題だったようです．
+こちらの場合，DHCP Offerが返ってこなかった．
+どうやらIPアドレスの更新ができないのは，HGW側の問題らしい．
 
 ## まとめ
 
