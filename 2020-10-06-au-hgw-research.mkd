@@ -1,0 +1,319 @@
+# HGWが接続が不安定だったので調査した
+
+au光を契約してから数ヶ月になるが，契約当初から一日に数回，インターネットにつながらなくなる現象が続いていた．
+手動でつなぎ直すとしばらくは問題なくつながるので放置していたものの，
+流石に面倒になってきたので本腰を入れて調査することにした．
+結果として，その原因を解明することが出来た．
+
+環境は
+
+* HGW: Aterm BL900HW
+* OS: Ubuntu 20.04
+
+という感じ．
+
+## 症状の詳細
+
+しばらく観察していると，
+
+* ipv6の通信は通る
+  * YouTubeとかGMailとかはつながる
+  * atcoder.jp はだめだった
+* つながらないタイミングで設定画面を確認すると，IPv4アドレスが表示されていない
+  * IPv6アドレスは問題なさそう
+* macだとそういう現象は発生していなさそう
+  * よしなに再接続してくれているのかもしれない
+
+というようなことが分かった．
+
+もしかして DHCP 周りで問題が発生しているのではないか，という推測を立ててググってみると，
+同じ型番のHGWを使っている人で同じ症状の人が結構いるようだ．
+
+この方向で調査をすすめることにした．
+
+## DHCP固定割当を試してみる
+
+HGWに指定したmacアドレスの機器へIPアドレスの固定割当ができる機能があるようで，これを試してみると症状が収まった．どうやら，これを設定するとDHCPのリース時間が長く設定される，という挙動をするらしい．
+そもそもIPアドレスの更新が発生しないので，問題も発生しなくなった，ということらしい．
+
+## パケットキャプチャを取ってみる
+
+macOSだと問題が発生しないことが確認できていたので，両方でパケットキャプチャを取ってみて，
+その差異を確認することにした．すると面白いことが分かった．
+
+下記は，macOSでのパケットキャプチャの結果を， `dhcp and ip.src==macOSマシンのIPアドレス` でフィルタしたものだ．
+
+![](./filter-src-mac.png)
+
+定期的にDHCP Requestが飛んでいて，IPアドレスの更新を行っていることが分かる．
+一方，Ubuntu 20.04で同様のフィルタを適用すると，下記のようになった．
+
+![](./filter-src-linux.png)
+
+一分ごとにDHCP Requestが飛んでいて，正常な感じではなさそう．
+さらに送信元IPアドレスのフィルタを外してみると，どうもDHCP ACKが帰ってきてない．
+macOSだとすぐに帰ってきているのに．
+
+さらに，下記の画像を見てみると．．．．
+
+![](./dhcp-discover-linux.png)
+
+最初にIPアドレスが割り振られたのが 10時04分くらいなので，
+リース時間が切れたために DHCP Discoverからやり直しているものと思われる．
+
+DHCP Offerが返されて，DHCP Requestが送信されるまでは良いものの，
+そこからDHCP ACKがなかなか帰ってこないために再送処理がなされ，
+最終的にDHCP ACKが帰ってくるまで1分半くらいかかっている．
+
+なるほど，このタイミングでインターネットにつながらなかったのかもしれない．
+
+## DHCP Requestパケットの差異を確認
+
+そうなると，DHCP Requestが怪しい．
+なぜIPアドレスの更新時にだけDHCP ACKが帰ってこないのかはわからないが，
+とにかくそう思ったので，それぞれの環境で送信されたDHCP Requestの差異を確認してみることにした．
+比較したのは下記2点．
+
+* IPアドレス取得時のDHCP Request
+  * macOSの記録が見つからなかったので，偶然見つかったAndroid端末のものと比較する
+* 更新時のDHCP Request
+  * macOSのものと比較する
+
+そうすると，要求するオプションが目立って違う気がする．
+
+### 新規IP取得時の挙動について
+
+差異は以下のとおりだった．
+
+* DHCP Request(新規IP取得時)
+  * Linuxでは，以下のオプションがついていない
+    * Option: (60) Vendor class identifier
+    * Parameter Request List Item: (51) IP Address Lease Time
+    * Parameter Request List Item: (58) Renewal Time Value
+    * Parameter Request List Item: (59) Rebinding Time Value
+    * Parameter Request List Item: (43) Vendor-Specific Information
+  * 以下のオプションはLinuxでのみついている
+    * Parameter Request List Item: (2) Time Offset
+    * Parameter Request List Item: (12) Host Name
+    * Parameter Request List Item: (121) Classless Static Route
+    * Parameter Request List Item: (33) Static Route
+    * Parameter Request List Item: (40) Network Information Service Domain
+    * Parameter Request List Item: (41) Network Information Service Servers
+    * Parameter Request List Item: (42) Network Time Protocol Servers
+    * Parameter Request List Item: (119) Domain Search
+    * Parameter Request List Item: (249) Private/Classless Static Route (Microsoft)
+    * Parameter Request List Item: (252) Private/Proxy autodiscovery
+    * Parameter Request List Item: (17) Root Path
+  * Linuxでは， `ciaddr` に以前もらったIPアドレスが指定されている
+
+新規IP取得時の挙動について，NetworkManagerのログにヒントがあった．
+
+```
+10月 05 11:04:39 ubuntu-host-name NetworkManager[922]: <info>  [1601863479.2475] dhcp4 (eno1): state changed bound -> expire
+10月 05 11:04:39 ubuntu-host-name NetworkManager[922]: <info>  [1601863479.2477] device (eno1): DHCPv4: trying to acquire a new lease within 90 seconds
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9364] device (eno1): DHCPv4: grace period expired
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9365] device (eno1): state change: activated -> failed (reason 'ip-config-unavailable', sys-iface-state: 'managed')
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9384] manager: NetworkManager state is now DISCONNECTED
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <warn>  [1601863569.9421] device (eno1): Activation: failed for connection '有線接続 1'
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9429] device (eno1): state change: failed -> disconnected (reason 'none', sys-iface-state: 'managed')
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9777] dhcp4 (eno1): canceled DHCP transaction
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9777] dhcp4 (eno1): state changed expire -> done
+10月 05 11:06:09 ubuntu-host-name NetworkManager[922]: <info>  [1601863569.9851] policy: auto-activating connection '有線接続 1' (c2de141a-e818-45a4-98eb-f8b9ea271aff)
+```
+
+一旦接続が切れた上で自動的に再接続処理が走っているらしい．
+更に詳細に言うと，
+
+1. DHCP Discoverを送信する
+2. DHCP Offerを受け取る
+3. DHCP Offerで受け取ったIPアドレスを使うためにDHCP Requestを送る
+
+という処理が走っているのだが，そこでDHCP ACKが返ってこないので接続が切れていて，その後自動で再接続処理が行われる．
+
+DHCPには，(IPアドレスの更新とは別に)以前に割り当てられたIPアドレスを再利用することができる仕組みがあって，
+NetworkManagerの再接続処理はこれを利用したものだと思われる．
+
+しかし，DHCPサーバが[RFC 2131 - Dynamic Host Configuration Protocol](https://tools.ietf.org/html/rfc2131)に準拠したものだと仮定すると，`DHCP Server Identifier` が付加されていることでDHCP ACKが返ってこない，というのはおかしい．なぜなら， このオプションはDHCP Offerに対する返答では必須とされているからだ．
+同様に `Vendor class identifier` についても必須のオプションではないし，その他パラメータについてはそもそも `Parameter request list` が必須ではない．
+
+最後に残るのがこれだ．
+
+> Linuxでは， `ciaddr` に以前もらったIPアドレスが指定されている
+
+どうやらこれはクライアントがおかしいらしい．
+というのも，RFCを確認すると以下のような記載があった
+
+> o DHCPREQUEST generated during SELECTING state:
+>     Client inserts the address of the selected server in 'server identifier', 'ciaddr' MUST be zero, 'requested IP address' MUST be filled in with the yiaddr value from the chosen DHCPOFFER.
+
+つまり， `SELECTING` 状態でDHCP REQUESTを生成する時， `server identifier` と `ciaddr` はゼロでなければならないので，
+DHCP Offerに対する返答で `ciaddr` が設定されているのはおかしい，ということだ．
+
+これで，IPアドレス発行時に一度接続が切れてしまう原因が分かった．
+
+### IPアドレス更新時の挙動について
+
+IPアドレスの更新がうまく動作しない点についてはどうだろう．
+先ほどと同様，うまくいっているケースとの差分を見てみよう．
+
+* Ubuntuでは，以下のオプションがついていない
+  * Option: (51) IP Address Lease Time
+* Ubuntuでは，Endの後にpaddingがない
+* Ubuntuでは，以下のパラメータが要求されていない
+  * Parameter Request List Item: (95) LDAP [TODO:RFC3679]
+  * Parameter Request List Item: (44) NetBIOS over TCP/IP Name Server
+  * Parameter Request List Item: (46) NetBIOS over TCP/IP Node Type
+* 以下のパラメータはUbuntuでのみ要求されている
+  * Parameter Request List Item: (26) Interface MTU
+  * Parameter Request List Item: (28) Broadcast Address
+  * Parameter Request List Item: (33) Static Route
+  * Parameter Request List Item: (40) Network Information Service Domain
+  * Parameter Request List Item: (41) Network Information Service Servers
+  * Parameter Request List Item: (42) Network Time Protocol Servers
+  * Parameter Request List Item: (249) Private/Classless Static Route (Microsoft)
+  * Parameter Request List Item: (17) Root Path
+* Maximum DHCP Message Sizeが異なる
+  * Ubuntuでは65535
+  * macOSでは1500
+
+RFCから引用すると，更新時のDHCP REQUESTについては以下のように書かれている．
+
+> o DHCPREQUEST generated during RENEWING state:
+>
+>    'server identifier' MUST NOT be filled in, 'requested IP address'
+>    option MUST NOT be filled in, 'ciaddr' MUST be filled in with
+>    client's IP address. In this situation, the client is completely
+>    configured, and is trying to extend its lease. This message will
+>    be unicast, so no relay agents will be involved in its
+>    transmission.  Because 'giaddr' is therefore not filled in, the
+>    DHCP server will trust the value in 'ciaddr', and use it when
+>    replying to the client.
+>
+>    A client MAY choose to renew or extend its lease prior to T1.  The
+>    server may choose not to extend the lease (as a policy decision by
+>    the network administrator), but should return a DHCPACK message
+>    regardless.
+
+ざっと見たところ，ここに書かれている制約は全て満たしている．
+
+* 以下のオプションは設定されていない
+  * server identifier
+  * requested IP address
+* `ciaddr` が設定されている
+
+ただ，[Dynamic Host Configuration Protocol 4.3.2 DHCPREQUEST message](https://tools.ietf.org/html/rfc1541#section-4.3.2)に気になる文章があった．
+
+> If the parameters specified in the DHCPREQUEST message
+> match the previous parameters, or if the request for an extension of
+> the lease (indicated by an extended 'IP address lease time' option)
+> is acceptable, the server returns a DHCPACK message to the requesting
+> client.
+
+リースの延長は `IP address lease time` オプションによって示される，と読める．もし `IP address lease time` が指定されていない場合，どのように動作するのが正解なんだろう．．．．
+
+dhclientでも試してみると，こちらでは更新できている．
+macOSのものと比較したときと共通しているのはパラメータリストの差異とパディングの有無くらいか．
+このことからIP address lease timeオプションがないとうまく動作しない，ということはなさそうだ．
+
+そうなると，「Maximum DHCP Message Sizeが異なる」が怪しい気がする．
+16bit符号なし整数のギリギリに設定されているところがなんとも．
+
+規格上，16bit符号なし整数とさだめられてはいるものの，他のリクエストを見てみると少し小さめに設定されている．
+IPアドレス取得時に送信されるメッセージでは576に設定されているので，そちらは問題なさそう．
+
+ということで，簡易的なDHCPクライアントを用意して，Maximum DHCP Message Sizeを変えて実験してみます．
+
+まずは小さめに設定したもの．
+
+```
+Frame 204282: 590 bytes on wire (4720 bits), 590 bytes captured (4720 bits) on interface eno1, id 0
+Ethernet II, Src: ASRockIn_06:26:4a (xx:xx:xx:xx:xx:4a), Dst: Broadcast (xx:xx:xx:xx:xx:ff)
+Internet Protocol Version 4, Src: 192.168.0.3, Dst: 255.255.255.255
+User Datagram Protocol, Src Port: 68, Dst Port: 67
+Dynamic Host Configuration Protocol (Discover)
+    Message type: Boot Request (1)
+    Hardware type: Ethernet (0x01)
+    Hardware address length: 6
+    Hops: 0
+    Transaction ID: 0x2f19a2a3
+    Seconds elapsed: 255
+        [Expert Info (Note/Protocol): Seconds elapsed appears to be encoded as little-endian]
+            [Seconds elapsed appears to be encoded as little-endian]
+            [Severity level: Note]
+            [Group: Protocol]
+    Bootp flags: 0x8000, Broadcast flag (Broadcast)
+    Client IP address: 0.0.0.0
+    Your (client) IP address: 0.0.0.0
+    Next server IP address: 0.0.0.0
+    Relay agent IP address: 0.0.0.0
+    Client MAC address: ASRockIn_06:26:4a (xx:xx:xx:xx:xx:4a)
+    Client hardware address padding: 00000000000000000000
+    Server host name not given
+    Boot file name not given
+    Magic cookie: DHCP
+    Option: (53) DHCP Message Type (Discover)
+        Length: 1
+        DHCP: Discover (1)
+    Option: (50) Requested IP Address (0.0.0.0)
+        Length: 4
+        Requested IP Address: 0.0.0.0
+    Option: (57) Maximum DHCP Message Size
+        Length: 2
+        Maximum DHCP Message Size: 4369
+    Option: (255) End
+        Option End: 255
+    Padding: 000000000000000000000000000000000000000000000000…
+```
+
+こちらは正常にDHCP Offerが返ってきました．
+次に，65535を設定した場合．
+
+```
+Frame 205341: 590 bytes on wire (4720 bits), 590 bytes captured (4720 bits) on interface eno1, id 0
+Ethernet II, Src: ASRockIn_06:26:4a (xx:xx:xx:xx:xx:4a), Dst: Broadcast (xx:xx:xx:xx:xx:ff)
+Internet Protocol Version 4, Src: 192.168.0.3, Dst: 255.255.255.255
+User Datagram Protocol, Src Port: 68, Dst Port: 67
+Dynamic Host Configuration Protocol (Discover)
+    Message type: Boot Request (1)
+    Hardware type: Ethernet (0x01)
+    Hardware address length: 6
+    Hops: 0
+    Transaction ID: 0x52868f3c
+    Seconds elapsed: 255
+        [Expert Info (Note/Protocol): Seconds elapsed appears to be encoded as little-endian]
+            [Seconds elapsed appears to be encoded as little-endian]
+            [Severity level: Note]
+            [Group: Protocol]
+    Bootp flags: 0x8000, Broadcast flag (Broadcast)
+    Client IP address: 0.0.0.0
+    Your (client) IP address: 0.0.0.0
+    Next server IP address: 0.0.0.0
+    Relay agent IP address: 0.0.0.0
+    Client MAC address: ASRockIn_06:26:4a (xx:xx:xx:xx:xx:4a)
+    Client hardware address padding: 00000000000000000000
+    Server host name not given
+    Boot file name not given
+    Magic cookie: DHCP
+    Option: (53) DHCP Message Type (Discover)
+        Length: 1
+        DHCP: Discover (1)
+    Option: (50) Requested IP Address (0.0.0.0)
+        Length: 4
+        Requested IP Address: 0.0.0.0
+    Option: (57) Maximum DHCP Message Size
+        Length: 2
+        Maximum DHCP Message Size: 65535
+    Option: (255) End
+        Option End: 255
+    Padding: 000000000000000000000000000000000000000000000000…
+```
+
+こちらの場合，DHCP Offerが返ってきませんでした．
+どうやらIPアドレスの更新ができないのは，HGW側の問題だったようです．
+
+## まとめ
+
+Ubuntuでは，IPアドレスの取得と更新がうまく動作しないことがある．
+その原因が，NetworkManager組み込みのDHCPクライアント，及びHGWの両方にあることが分かった．
+dhclientを使うように設定を変更すると，とりあえずの解決はできそう．
+
