@@ -1,0 +1,21 @@
+# node_modulesはブラックホールより深い
+
+最近，node_modulesがブラックホールより深くて辛い．
+例えばNode.jsでは，
+[import文](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Statements/import)や
+[`require` 関数](https://nodejs.org/api/modules.html#modules_require_id) で指定されたモジュール名を求めて，
+徐々にディレクトリツリーの上の階層へ移動しながら `node_modules` ディレクトリの中を探す．
+そのため，無限にディレクトリ階層が深くなりがちだ．こんな風に．
+
+* node_modules
+  * lib_a
+    * node_modules
+      * lib_c
+  * lib_c
+
+こういう事もあって，開発用のパッケージ等含めると，node_modulesのサイズがバカにならない．
+数GBの容量を取ることもザラにある．
+依存ライブラリででかいディスク容量を要求されるのは嫌だし，依存ツリーはできるだけフラットにしたい．
+依存ツリーの中に，同じパッケージの異なるバージョンが存在できないようにすると大分変わると思うし，
+なんなら再帰的な依存を全てルートパッケージのpackage.jsonに追記するようにしてもなんとかなりそうな気がするんだけどなぁ．．．．
+
