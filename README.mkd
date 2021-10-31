@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [原神のゲームプレイ生配信を見ているのがしんどい](./2021-10-31-i-stop-watching-genshin-stream.md)
 * [node_modulesはブラックホールより深い](./2020-05-17-node-modules-is-deeper-than-blackhole.mkd)
 * [HGWの接続が不安定だったので調査した](./2020-10-06-au-hgw-research.mkd)
 * [ABC176 D - Wizard in Maze をダイクストラで解く](./2020-08-23-abc176-d.mkd)
