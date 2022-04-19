@@ -7,6 +7,7 @@
 ## 記事
 
 * :pushpin: [プロフィール](./profile.mkd)
+* [2022年春期 情報処理安全確保支援士試験 午後Ⅰを解いた](./2022-04-19-2022-sc-pm1.md)
 * [情報処理安全確保支援士試験に合格した](./2021-12-18-pass-sc.mkd)
 * [原神のゲームプレイ生配信を見ているのがしんどい](./2021-10-31-i-stop-watching-genshin-stream.md)
 * [node_modulesはブラックホールより深い](./2020-05-17-node-modules-is-deeper-than-blackhole.mkd)
